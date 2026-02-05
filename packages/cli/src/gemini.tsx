@@ -103,6 +103,7 @@ import { TerminalProvider } from './ui/contexts/TerminalContext.js';
 import { setupTerminalAndTheme } from './utils/terminalTheme.js';
 import { profiler } from './ui/components/DebugProfiler.js';
 import { runDeferredCommand } from './deferred.js';
+import { startRemoteServer } from './core/remoteServer.js';
 
 const SLOW_RENDER_MS = 200;
 
@@ -202,6 +203,17 @@ export async function startInteractiveUI(
 
   const version = await getVersion();
   setWindowTitle(basename(workspaceRoot), settings);
+
+  const remotePortStr = process.env['GEMINI_CLI_REMOTE_PORT'];
+  if (remotePortStr) {
+    const port = parseInt(remotePortStr, 10);
+    if (!isNaN(port)) {
+      const server = startRemoteServer(port);
+      registerCleanup(async () => {
+        await new Promise((resolve) => server.close(resolve));
+      });
+    }
+  }
 
   const consolePatcher = new ConsolePatcher({
     onNewMessage: (msg) => {

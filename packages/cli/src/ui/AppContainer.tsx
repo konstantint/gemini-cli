@@ -141,6 +141,7 @@ import { LoginWithGoogleRestartDialog } from './auth/LoginWithGoogleRestartDialo
 import { NewAgentsChoice } from './components/NewAgentsNotification.js';
 import { isSlashCommand } from './utils/commandUtils.js';
 import { useTerminalTheme } from './hooks/useTerminalTheme.js';
+import { tuiRemoteBridge } from './utils/remoteBridge.js';
 
 function isToolExecuting(pendingHistoryItems: HistoryItemWithoutId[]) {
   return pendingHistoryItems.some((item) => {
@@ -1099,6 +1100,13 @@ Logging in with Google... Restarting Gemini CLI to continue.
       messageQueue.length,
     ],
   );
+
+  useEffect(() => {
+    tuiRemoteBridge.register(handleFinalSubmit, () => historyManager.history);
+    return () => {
+      tuiRemoteBridge.unregister();
+    };
+  }, [handleFinalSubmit, historyManager.history]);
 
   const handleClearScreen = useCallback(() => {
     historyManager.clearItems();
