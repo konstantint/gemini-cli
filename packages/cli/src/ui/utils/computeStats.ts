@@ -9,6 +9,7 @@ import type {
   ComputedSessionStats,
   ModelMetrics,
 } from '../contexts/SessionContext.js';
+import { calculateCost } from '../../config/costs.js';
 
 export function calculateErrorRate(metrics: ModelMetrics): number {
   if (metrics.api.totalRequests === 0) {
@@ -75,6 +76,18 @@ export const computeSessionStats = (
         100
       : 0;
 
+  const totalCost = Object.entries(models).reduce(
+    (acc, [modelName, modelMetrics]) =>
+      acc +
+      calculateCost(
+        modelName,
+        modelMetrics.tokens.input,
+        modelMetrics.tokens.candidates,
+        modelMetrics.tokens.cached,
+      ),
+    0,
+  );
+
   return {
     totalApiTime,
     totalToolTime,
@@ -90,5 +103,6 @@ export const computeSessionStats = (
     totalPromptTokens,
     totalLinesAdded: files.totalLinesAdded,
     totalLinesRemoved: files.totalLinesRemoved,
+    totalCost,
   };
 };

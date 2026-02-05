@@ -164,6 +164,7 @@ export interface ComputedSessionStats {
   totalPromptTokens: number;
   totalLinesAdded: number;
   totalLinesRemoved: number;
+  totalCost: number;
 }
 
 // Defines the final "value" of our context, including the state

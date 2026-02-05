@@ -16,6 +16,7 @@ import {
 import { useSessionStats } from '../contexts/SessionContext.js';
 import { Table, type Column } from './Table.js';
 import { useSettings } from '../contexts/SettingsContext.js';
+import { calculateCost } from '../../config/costs.js';
 
 interface StatRowData {
   metric: string;
@@ -74,6 +75,7 @@ export const ModelStatsDisplay: React.FC<ModelStatsDisplayProps> = ({
     metric: string,
     getValue: (
       metrics: (typeof activeModels)[0][1],
+      name: string,
     ) => string | React.ReactNode,
     options: { isSection?: boolean; isSubtle?: boolean } = {},
   ): StatRowData => {
@@ -83,7 +85,7 @@ export const ModelStatsDisplay: React.FC<ModelStatsDisplayProps> = ({
       isSubtle: options.isSubtle,
     };
     activeModels.forEach(([name, metrics]) => {
-      row[name] = getValue(metrics);
+      row[name] = getValue(metrics, name);
     });
     return row;
   };
@@ -190,6 +192,31 @@ export const ModelStatsDisplay: React.FC<ModelStatsDisplayProps> = ({
       ),
       { isSubtle: true },
     ),
+  );
+
+  // Spacer
+  rows.push({ metric: '' });
+
+  // Cost Section
+  rows.push({ metric: 'Estimated Cost', isSection: true });
+  rows.push(
+    createRow('Total', (m, name) => {
+      const cost = calculateCost(
+        name,
+        m.tokens.input,
+        m.tokens.candidates,
+        m.tokens.cached,
+      );
+      return (
+        <Text color={theme.text.primary}>
+          {cost.toLocaleString('en-US', {
+            style: 'currency',
+            currency: 'USD',
+            minimumFractionDigits: 4,
+          })}
+        </Text>
+      );
+    }),
   );
 
   const columns: Array<Column<StatRowData>> = [

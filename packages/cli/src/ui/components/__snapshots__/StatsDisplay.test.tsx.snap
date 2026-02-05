@@ -9,6 +9,7 @@ exports[`<StatsDisplay /> > Code Changes Display > displays Code Changes when li
 │  Session ID:                 test-session-id                                                     │
 │  Tool Calls:                 1 ( ✓ 1 x 0 )                                                       │
 │  Success Rate:               100.0%                                                              │
+│  Total Estimated Cost:       $0.00                                                               │
 │  Code Changes:               +42 -18                                                             │
 │                                                                                                  │
 │  Performance                                                                                     │
@@ -30,6 +31,7 @@ exports[`<StatsDisplay /> > Code Changes Display > hides Code Changes when no li
 │  Session ID:                 test-session-id                                                     │
 │  Tool Calls:                 1 ( ✓ 1 x 0 )                                                       │
 │  Success Rate:               100.0%                                                              │
+│  Total Estimated Cost:       $0.00                                                               │
 │                                                                                                  │
 │  Performance                                                                                     │
 │  Wall Time:                  1s                                                                  │
@@ -50,6 +52,7 @@ exports[`<StatsDisplay /> > Conditional Color Tests > renders success rate in gr
 │  Session ID:                 test-session-id                                                     │
 │  Tool Calls:                 10 ( ✓ 10 x 0 )                                                     │
 │  Success Rate:               100.0%                                                              │
+│  Total Estimated Cost:       $0.00                                                               │
 │                                                                                                  │
 │  Performance                                                                                     │
 │  Wall Time:                  1s                                                                  │
@@ -70,6 +73,7 @@ exports[`<StatsDisplay /> > Conditional Color Tests > renders success rate in re
 │  Session ID:                 test-session-id                                                     │
 │  Tool Calls:                 10 ( ✓ 5 x 5 )                                                      │
 │  Success Rate:               50.0%                                                               │
+│  Total Estimated Cost:       $0.00                                                               │
 │                                                                                                  │
 │  Performance                                                                                     │
 │  Wall Time:                  1s                                                                  │
@@ -90,6 +94,7 @@ exports[`<StatsDisplay /> > Conditional Color Tests > renders success rate in ye
 │  Session ID:                 test-session-id                                                     │
 │  Tool Calls:                 10 ( ✓ 9 x 1 )                                                      │
 │  Success Rate:               90.0%                                                               │
+│  Total Estimated Cost:       $0.00                                                               │
 │                                                                                                  │
 │  Performance                                                                                     │
 │  Wall Time:                  1s                                                                  │
@@ -110,6 +115,7 @@ exports[`<StatsDisplay /> > Conditional Rendering Tests > hides Efficiency secti
 │  Session ID:                 test-session-id                                                     │
 │  Tool Calls:                 0 ( ✓ 0 x 0 )                                                       │
 │  Success Rate:               0.0%                                                                │
+│  Total Estimated Cost:       $0.00                                                               │
 │                                                                                                  │
 │  Performance                                                                                     │
 │  Wall Time:                  1s                                                                  │
@@ -118,9 +124,9 @@ exports[`<StatsDisplay /> > Conditional Rendering Tests > hides Efficiency secti
 │    » Tool Time:              0s (0.0%)                                                           │
 │                                                                                                  │
 │                                                                                                  │
-│  Model Usage                 Reqs   Input Tokens   Cache Reads  Output Tokens                    │
-│  ────────────────────────────────────────────────────────────────────────────                    │
-│  gemini-2.5-pro                 1            100             0            100                    │
+│  Model Usage                 Reqs   Input Tokens   Cache Reads  Output Tokens        Cost        │
+│  ────────────────────────────────────────────────────────────────────────────────────────        │
+│  gemini-2.5-pro                 1            100             0            100     $0.0011        │
 │                                                                                                  │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯"
 `;
@@ -134,6 +140,7 @@ exports[`<StatsDisplay /> > Conditional Rendering Tests > hides User Agreement w
 │  Session ID:                 test-session-id                                                     │
 │  Tool Calls:                 2 ( ✓ 1 x 1 )                                                       │
 │  Success Rate:               50.0%                                                               │
+│  Total Estimated Cost:       $0.00                                                               │
 │                                                                                                  │
 │  Performance                                                                                     │
 │  Wall Time:                  1s                                                                  │
@@ -154,6 +161,7 @@ exports[`<StatsDisplay /> > Quota Display > renders quota information for unused
 │  Session ID:                 test-session-id                                                     │
 │  Tool Calls:                 0 ( ✓ 0 x 0 )                                                       │
 │  Success Rate:               0.0%                                                                │
+│  Total Estimated Cost:       $0.00                                                               │
 │                                                                                                  │
 │  Performance                                                                                     │
 │  Wall Time:                  1s                                                                  │
@@ -184,6 +192,7 @@ exports[`<StatsDisplay /> > Quota Display > renders quota information when quota
 │  Session ID:                 test-session-id                                                     │
 │  Tool Calls:                 0 ( ✓ 0 x 0 )                                                       │
 │  Success Rate:               0.0%                                                                │
+│  Total Estimated Cost:       $0.00                                                               │
 │                                                                                                  │
 │  Performance                                                                                     │
 │  Wall Time:                  1s                                                                  │
@@ -214,6 +223,7 @@ exports[`<StatsDisplay /> > Title Rendering > renders the custom title when a ti
 │  Session ID:                 test-session-id                                                     │
 │  Tool Calls:                 0 ( ✓ 0 x 0 )                                                       │
 │  Success Rate:               0.0%                                                                │
+│  Total Estimated Cost:       $0.00                                                               │
 │                                                                                                  │
 │  Performance                                                                                     │
 │  Wall Time:                  1s                                                                  │
@@ -234,6 +244,7 @@ exports[`<StatsDisplay /> > Title Rendering > renders the default title when no 
 │  Session ID:                 test-session-id                                                     │
 │  Tool Calls:                 0 ( ✓ 0 x 0 )                                                       │
 │  Success Rate:               0.0%                                                                │
+│  Total Estimated Cost:       $0.00                                                               │
 │                                                                                                  │
 │  Performance                                                                                     │
 │  Wall Time:                  1s                                                                  │
@@ -254,6 +265,7 @@ exports[`<StatsDisplay /> > renders a table with two models correctly 1`] = `
 │  Session ID:                 test-session-id                                                     │
 │  Tool Calls:                 0 ( ✓ 0 x 0 )                                                       │
 │  Success Rate:               0.0%                                                                │
+│  Total Estimated Cost:       $0.06                                                               │
 │                                                                                                  │
 │  Performance                                                                                     │
 │  Wall Time:                  1s                                                                  │
@@ -262,10 +274,10 @@ exports[`<StatsDisplay /> > renders a table with two models correctly 1`] = `
 │    » Tool Time:              0s (0.0%)                                                           │
 │                                                                                                  │
 │                                                                                                  │
-│  Model Usage                 Reqs   Input Tokens   Cache Reads  Output Tokens                    │
-│  ────────────────────────────────────────────────────────────────────────────                    │
-│  gemini-2.5-pro                 3            500           500          2,000                    │
-│  gemini-2.5-flash               5         15,000        10,000         15,000                    │
+│  Model Usage                 Reqs   Input Tokens   Cache Reads  Output Tokens        Cost        │
+│  ────────────────────────────────────────────────────────────────────────────────────────        │
+│  gemini-2.5-pro                 3            500           500          2,000     $0.0201        │
+│  gemini-2.5-flash               5         15,000        10,000         15,000     $0.0393        │
 │                                                                                                  │
 │  Savings Highlight: 10,500 (40.4%) of input tokens were served from the cache, reducing costs.   │
 │                                                                                                  │
@@ -281,6 +293,7 @@ exports[`<StatsDisplay /> > renders all sections when all data is present 1`] = 
 │  Session ID:                 test-session-id                                                     │
 │  Tool Calls:                 2 ( ✓ 1 x 1 )                                                       │
 │  Success Rate:               50.0%                                                               │
+│  Total Estimated Cost:       $0.00                                                               │
 │  User Agreement:             100.0% (1 reviewed)                                                 │
 │                                                                                                  │
 │  Performance                                                                                     │
@@ -290,9 +303,9 @@ exports[`<StatsDisplay /> > renders all sections when all data is present 1`] = 
 │    » Tool Time:              123ms (55.2%)                                                       │
 │                                                                                                  │
 │                                                                                                  │
-│  Model Usage                 Reqs   Input Tokens   Cache Reads  Output Tokens                    │
-│  ────────────────────────────────────────────────────────────────────────────                    │
-│  gemini-2.5-pro                 1             50            50            100                    │
+│  Model Usage                 Reqs   Input Tokens   Cache Reads  Output Tokens        Cost        │
+│  ────────────────────────────────────────────────────────────────────────────────────────        │
+│  gemini-2.5-pro                 1             50            50            100     $0.0010        │
 │                                                                                                  │
 │  Savings Highlight: 50 (50.0%) of input tokens were served from the cache, reducing costs.       │
 │                                                                                                  │
@@ -308,6 +321,7 @@ exports[`<StatsDisplay /> > renders only the Performance section in its zero sta
 │  Session ID:                 test-session-id                                                     │
 │  Tool Calls:                 0 ( ✓ 0 x 0 )                                                       │
 │  Success Rate:               0.0%                                                                │
+│  Total Estimated Cost:       $0.00                                                               │
 │                                                                                                  │
 │  Performance                                                                                     │
 │  Wall Time:                  1s                                                                  │

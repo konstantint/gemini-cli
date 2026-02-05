@@ -26,6 +26,7 @@ import {
   VALID_GEMINI_MODELS,
 } from '@google/gemini-cli-core';
 import { useSettings } from '../contexts/SettingsContext.js';
+import { calculateCost } from '../../config/costs.js';
 
 // A more flexible and powerful StatRow component
 interface StatRowProps {
@@ -87,6 +88,12 @@ const buildModelRows = (
     const modelName = getBaseModelName(name);
     const cachedTokens = metrics.tokens.cached;
     const inputTokens = metrics.tokens.input;
+    const cost = calculateCost(
+      name,
+      inputTokens,
+      metrics.tokens.candidates,
+      cachedTokens,
+    );
     return {
       key: name,
       modelName,
@@ -94,6 +101,11 @@ const buildModelRows = (
       cachedTokens: cachedTokens.toLocaleString(),
       inputTokens: inputTokens.toLocaleString(),
       outputTokens: metrics.tokens.candidates.toLocaleString(),
+      cost: cost.toLocaleString('en-US', {
+        style: 'currency',
+        currency: 'USD',
+        minimumFractionDigits: 4,
+      }),
       bucket: quotas?.buckets?.find((b) => b.modelId === modelName),
       isActive: true,
     };
@@ -115,6 +127,7 @@ const buildModelRows = (
         cachedTokens: '-',
         inputTokens: '-',
         outputTokens: '-',
+        cost: '-',
         bucket,
         isActive: false,
       })) || [];
@@ -165,6 +178,7 @@ const ModelUsageTable: React.FC<{
   const uncachedWidth = 15;
   const cachedWidth = 14;
   const outputTokensWidth = 15;
+  const costWidth = 12;
   const usageLimitWidth = showQuotaColumn ? 28 : 0;
 
   const cacheEfficiencyColor = getStatusColor(cacheEfficiency, {
@@ -177,7 +191,7 @@ const ModelUsageTable: React.FC<{
     requestsWidth +
     (showQuotaColumn
       ? usageLimitWidth
-      : uncachedWidth + cachedWidth + outputTokensWidth);
+      : uncachedWidth + cachedWidth + outputTokensWidth + costWidth);
 
   return (
     <Box flexDirection="column" marginTop={1}>
@@ -228,6 +242,16 @@ const ModelUsageTable: React.FC<{
             >
               <Text bold color={theme.text.primary}>
                 Output Tokens
+              </Text>
+            </Box>
+            <Box
+              width={costWidth}
+              flexDirection="column"
+              alignItems="flex-end"
+              flexShrink={0}
+            >
+              <Text bold color={theme.text.primary}>
+                Cost
               </Text>
             </Box>
           </>
@@ -311,6 +335,20 @@ const ModelUsageTable: React.FC<{
                   }
                 >
                   {row.outputTokens}
+                </Text>
+              </Box>
+              <Box
+                width={costWidth}
+                flexDirection="column"
+                alignItems="flex-end"
+                flexShrink={0}
+              >
+                <Text
+                  color={
+                    row.isActive ? theme.text.primary : theme.text.secondary
+                  }
+                >
+                  {row.cost}
                 </Text>
               </Box>
             </>
@@ -451,6 +489,15 @@ export const StatsDisplay: React.FC<StatsDisplayProps> = ({
         </StatRow>
         <StatRow title="Success Rate:">
           <Text color={successColor}>{computed.successRate.toFixed(1)}%</Text>
+        </StatRow>
+        <StatRow title="Total Estimated Cost:">
+          <Text color={theme.text.primary}>
+            {computed.totalCost.toLocaleString('en-US', {
+              style: 'currency',
+              currency: 'USD',
+              minimumFractionDigits: 2,
+            })}
+          </Text>
         </StatRow>
         {computed.totalDecisions > 0 && (
           <StatRow title="User Agreement:">
