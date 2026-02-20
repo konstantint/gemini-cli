@@ -11,14 +11,14 @@ import {
   fromGenerateContentResponse,
   toContents,
 } from './converter.js';
-import type {
-  ContentListUnion,
-  GenerateContentParameters,
-
+import {
+  type ContentListUnion,
+  type GenerateContentParameters,
   GenerateContentResponse,
   FinishReason,
   BlockedReason,
-  type Part} from '@google/genai';
+  type Part,
+} from '@google/genai';
 
 describe('converter', () => {
   describe('toCodeAssistRequest', () => {

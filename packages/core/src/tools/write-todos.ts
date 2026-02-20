@@ -4,7 +4,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import type { ToolInvocation ,
+import {
+  type ToolInvocation,
   BaseDeclarativeTool,
   BaseToolInvocation,
   Kind,

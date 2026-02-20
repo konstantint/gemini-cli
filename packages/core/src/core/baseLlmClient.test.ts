@@ -15,7 +15,11 @@ import {
   type Mock,
 } from 'vitest';
 
-import type { GenerateContentOptions , BaseLlmClient, type GenerateJsonOptions  } from './baseLlmClient.js';
+import {
+  type GenerateContentOptions,
+  BaseLlmClient,
+  type GenerateJsonOptions,
+} from './baseLlmClient.js';
 import type { ContentGenerator } from './contentGenerator.js';
 import type { ModelAvailabilityService } from '../availability/modelAvailabilityService.js';
 import { createAvailabilityServiceMock } from '../availability/testUtils.js';
@@ -25,7 +29,7 @@ import { AuthType } from './contentGenerator.js';
 import { reportError } from '../utils/errorReporting.js';
 import { logMalformedJsonResponse } from '../telemetry/loggers.js';
 import { retryWithBackoff } from '../utils/retry.js';
-import { MalformedJsonResponseEvent , LlmRole } from '../telemetry/types.js';
+import { MalformedJsonResponseEvent, LlmRole } from '../telemetry/types.js';
 import { getErrorMessage } from '../utils/errors.js';
 import type { ModelConfigService } from '../services/modelConfigService.js';
 import { makeResolvedModelConfig } from '../services/modelConfigServiceTestUtils.js';

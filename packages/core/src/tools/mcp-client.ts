@@ -17,12 +17,11 @@ import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
 import type { StreamableHTTPClientTransportOptions } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
-import type {
-  GetPromptResult,
-  Prompt,
-  ReadResourceResult,
-  Resource,
-
+import {
+  type GetPromptResult,
+  type Prompt,
+  type ReadResourceResult,
+  type Resource,
   ListResourcesResultSchema,
   ListRootsRequestSchema,
   ReadResourceResultSchema,
@@ -30,7 +29,8 @@ import type {
   ToolListChangedNotificationSchema,
   PromptListChangedNotificationSchema,
   ProgressNotificationSchema,
-  type Tool as McpTool} from '@modelcontextprotocol/sdk/types.js';
+  type Tool as McpTool,
+} from '@modelcontextprotocol/sdk/types.js';
 import { ApprovalMode, PolicyDecision } from '../policy/types.js';
 import { parse } from 'shell-quote';
 import type { Config, MCPServerConfig } from '../config/config.js';

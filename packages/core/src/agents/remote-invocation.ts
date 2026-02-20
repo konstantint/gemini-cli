@@ -4,7 +4,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import type { ToolConfirmationOutcome ,
+import {
+  type ToolConfirmationOutcome,
   BaseToolInvocation,
   type ToolResult,
   type ToolCallConfirmationDetails,

@@ -4,13 +4,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import type {
-  AnyDeclarativeTool,
-  AnyToolInvocation,
-  CompletedToolCall,
-  ContentGeneratorConfig,
-  ErroredToolCall,
-
+import {
+  type AnyDeclarativeTool,
+  type AnyToolInvocation,
+  type CompletedToolCall,
+  type ContentGeneratorConfig,
+  type ErroredToolCall,
   CoreToolCallStatus,
   AuthType,
   EditTool,
@@ -18,10 +17,11 @@ import type {
   ToolConfirmationOutcome,
   ToolErrorType,
   ToolRegistry,
-  type MessageBus} from '../index.js';
+  type MessageBus,
+} from '../index.js';
 import { OutputFormat } from '../output/types.js';
 import { logs } from '@opentelemetry/api-logs';
-import type { Config , type GeminiCLIExtension } from '../config/config.js';
+import type { Config, type GeminiCLIExtension } from '../config/config.js';
 import {
   logApiError,
   logApiRequest,
