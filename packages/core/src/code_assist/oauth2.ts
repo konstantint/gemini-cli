@@ -115,8 +115,9 @@ async function initOauthClient(
 
   if (
     credentials &&
-    (credentials as { type?: string }).type ===
-      'external_account_authorized_user'
+    typeof credentials === 'object' &&
+    'type' in credentials &&
+    credentials.type === 'external_account_authorized_user'
   ) {
     const auth = new GoogleAuth({
       scopes: OAUTH_SCOPE,
@@ -602,8 +603,10 @@ export function getAvailablePort(): Promise<number> {
       }
       const server = net.createServer();
       server.listen(0, () => {
-        const address = server.address()! as net.AddressInfo;
-        port = address.port;
+        const address = server.address();
+        if (address && typeof address === 'object') {
+          port = address.port;
+        }
       });
       server.on('listening', () => {
         server.close();

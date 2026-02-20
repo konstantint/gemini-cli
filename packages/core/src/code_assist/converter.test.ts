@@ -14,13 +14,11 @@ import {
 import type {
   ContentListUnion,
   GenerateContentParameters,
-} from '@google/genai';
-import {
+
   GenerateContentResponse,
   FinishReason,
   BlockedReason,
-  type Part,
-} from '@google/genai';
+  type Part} from '@google/genai';
 
 describe('converter', () => {
   describe('toCodeAssistRequest', () => {
@@ -330,6 +328,16 @@ describe('converter', () => {
       };
       const genaiRes = fromGenerateContentResponse(codeAssistRes);
       expect(genaiRes.responseId).toBeUndefined();
+    });
+
+    it('should handle missing response property gracefully', () => {
+      const invalidRes = {
+        traceId: 'some-trace-id',
+      } as unknown as CaGenerateContentResponse;
+
+      const genaiRes = fromGenerateContentResponse(invalidRes);
+      expect(genaiRes.responseId).toEqual('some-trace-id');
+      expect(genaiRes.candidates).toEqual([]);
     });
   });
 

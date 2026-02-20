@@ -8,8 +8,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as dotenv from 'dotenv';
 
-import type { TelemetryTarget } from '@google/gemini-cli-core';
-import {
+import type { TelemetryTarget ,
   AuthType,
   Config,
   type ConfigParameters,
@@ -18,7 +17,6 @@ import {
   loadServerHierarchicalMemory,
   GEMINI_DIR,
   DEFAULT_GEMINI_EMBEDDING_MODEL,
-  DEFAULT_GEMINI_MODEL,
   type ExtensionLoader,
   startupProfiler,
   PREVIEW_GEMINI_MODEL,
@@ -60,9 +58,7 @@ export async function loadConfig(
 
   const configParams: ConfigParameters = {
     sessionId: taskId,
-    model: settings.general?.previewFeatures
-      ? PREVIEW_GEMINI_MODEL
-      : DEFAULT_GEMINI_MODEL,
+    model: PREVIEW_GEMINI_MODEL,
     embeddingModel: DEFAULT_GEMINI_EMBEDDING_MODEL,
     sandbox: undefined, // Sandbox might not be relevant for a server-side agent
     targetDir: workspaceDir, // Or a specific directory the agent operates on
@@ -80,6 +76,7 @@ export async function loadConfig(
     cwd: workspaceDir,
     telemetry: {
       enabled: settings.telemetry?.enabled,
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
       target: settings.telemetry?.target as TelemetryTarget,
       otlpEndpoint:
         process.env['OTEL_EXPORTER_OTLP_ENDPOINT'] ??
@@ -104,7 +101,6 @@ export async function loadConfig(
     trustedFolder: true,
     extensionLoader,
     checkpointing,
-    previewFeatures: settings.general?.previewFeatures,
     interactive: true,
     enableInteractiveShell: true,
     ptyInfo: 'auto',

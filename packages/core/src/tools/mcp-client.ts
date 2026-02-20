@@ -22,30 +22,28 @@ import type {
   Prompt,
   ReadResourceResult,
   Resource,
-} from '@modelcontextprotocol/sdk/types.js';
-import {
+
   ListResourcesResultSchema,
   ListRootsRequestSchema,
   ReadResourceResultSchema,
   ResourceListChangedNotificationSchema,
   ToolListChangedNotificationSchema,
   PromptListChangedNotificationSchema,
-  type Tool as McpTool,
-} from '@modelcontextprotocol/sdk/types.js';
+  ProgressNotificationSchema,
+  type Tool as McpTool} from '@modelcontextprotocol/sdk/types.js';
+import { ApprovalMode, PolicyDecision } from '../policy/types.js';
 import { parse } from 'shell-quote';
-import type {
-  Config,
-  GeminiCLIExtension,
-  MCPServerConfig,
-} from '../config/config.js';
+import type { Config, MCPServerConfig } from '../config/config.js';
 import { AuthProviderType } from '../config/config.js';
 import { GoogleCredentialProvider } from '../mcp/google-auth-provider.js';
 import { ServiceAccountImpersonationProvider } from '../mcp/sa-impersonation-provider.js';
 import { DiscoveredMCPTool } from './mcp-tool.js';
+import { XcodeMcpBridgeFixTransport } from './xcode-mcp-fix-transport.js';
 
 import type { CallableTool, FunctionCall, Part, Tool } from '@google/genai';
 import { basename } from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { randomUUID } from 'node:crypto';
 import type { McpAuthProvider } from '../mcp/auth-provider.js';
 import { MCPOAuthProvider } from '../mcp/oauth-provider.js';
 import { MCPOAuthTokenStorage } from '../mcp/oauth-token-storage.js';
@@ -60,6 +58,7 @@ import type {
   Unsubscribe,
   WorkspaceContext,
 } from '../utils/workspaceContext.js';
+import { getToolCallContext } from '../utils/toolCallContext.js';
 import type { ToolRegistry } from './tool-registry.js';
 import { debugLogger } from '../utils/debugLogger.js';
 import { type MessageBus } from '../confirmation-bus/message-bus.js';
@@ -69,6 +68,10 @@ import {
   sanitizeEnvironment,
   type EnvironmentSanitizationConfig,
 } from '../services/environmentSanitization.js';
+import {
+  GEMINI_CLI_IDENTIFICATION_ENV_VAR,
+  GEMINI_CLI_IDENTIFICATION_ENV_VAR_VALUE,
+} from '../services/shellExecutionService.js';
 
 export const MCP_DEFAULT_TIMEOUT_MSEC = 10 * 60 * 1000; // default to 10 minutes
 
@@ -104,12 +107,20 @@ export enum MCPDiscoveryState {
 }
 
 /**
+ * Interface for reporting progress from MCP tool calls.
+ */
+export interface McpProgressReporter {
+  registerProgressToken(token: string | number, callId: string): void;
+  unregisterProgressToken(token: string | number): void;
+}
+
+/**
  * A client for a single MCP server.
  *
  * This class is responsible for connecting to, discovering tools from, and
  * managing the state of a single MCP server.
  */
-export class McpClient {
+export class McpClient implements McpProgressReporter {
   private client: Client | undefined;
   private transport: Transport | undefined;
   private status: MCPServerStatus = MCPServerStatus.DISCONNECTED;
@@ -119,6 +130,12 @@ export class McpClient {
   private pendingResourceRefresh: boolean = false;
   private isRefreshingPrompts: boolean = false;
   private pendingPromptRefresh: boolean = false;
+
+  /**
+   * Map of progress tokens to tool call IDs.
+   * This allows us to route progress notifications to the correct tool call.
+   */
+  private readonly progressTokenToCallId = new Map<string | number, string>();
 
   constructor(
     private readonly serverName: string,
@@ -252,8 +269,11 @@ export class McpClient {
       this.client!,
       cliConfig,
       this.toolRegistry.getMessageBus(),
-      options ?? {
-        timeout: this.serverConfig.timeout ?? MCP_DEFAULT_TIMEOUT_MSEC,
+      {
+        ...(options ?? {
+          timeout: this.serverConfig.timeout ?? MCP_DEFAULT_TIMEOUT_MSEC,
+        }),
+        progressReporter: this,
       },
     );
   }
@@ -274,7 +294,10 @@ export class McpClient {
     this.resourceRegistry.setResourcesForServer(this.serverName, resources);
   }
 
-  async readResource(uri: string): Promise<ReadResourceResult> {
+  async readResource(
+    uri: string,
+    options?: { signal?: AbortSignal },
+  ): Promise<ReadResourceResult> {
     this.assertConnected();
     return this.client!.request(
       {
@@ -282,6 +305,7 @@ export class McpClient {
         params: { uri },
       },
       ReadResourceResultSchema,
+      options,
     );
   }
 
@@ -343,6 +367,25 @@ export class McpClient {
         },
       );
     }
+
+    this.client.setNotificationHandler(
+      ProgressNotificationSchema,
+      (notification) => {
+        const { progressToken, progress, total, message } = notification.params;
+        const callId = this.progressTokenToCallId.get(progressToken);
+
+        if (callId) {
+          coreEvents.emitMcpProgress({
+            serverName: this.serverName,
+            callId,
+            progressToken,
+            progress,
+            total,
+            message,
+          });
+        }
+      },
+    );
   }
 
   /**
@@ -401,6 +444,20 @@ export class McpClient {
       this.isRefreshingResources = false;
       this.pendingResourceRefresh = false;
     }
+  }
+
+  /**
+   * Registers a progress token for a tool call.
+   */
+  registerProgressToken(token: string | number, callId: string): void {
+    this.progressTokenToCallId.set(token, callId);
+  }
+
+  /**
+   * Unregisters a progress token.
+   */
+  unregisterProgressToken(token: string | number): void {
+    this.progressTokenToCallId.delete(token);
   }
 
   /**
@@ -660,18 +717,17 @@ async function handleAutomaticOAuth(
   try {
     debugLogger.log(`🔐 '${mcpServerName}' requires OAuth authentication`);
 
-    // Always try to parse the resource metadata URI from the www-authenticate header
-    let oauthConfig;
-    const resourceMetadataUri =
-      OAuthUtils.parseWWWAuthenticateHeader(wwwAuthenticate);
-    if (resourceMetadataUri) {
-      oauthConfig = await OAuthUtils.discoverOAuthConfig(resourceMetadataUri);
-    } else if (hasNetworkTransport(mcpServerConfig)) {
+    const serverUrl = mcpServerConfig.httpUrl || mcpServerConfig.url;
+
+    // Try to discover OAuth config from the WWW-Authenticate header first
+    let oauthConfig = await OAuthUtils.discoverOAuthFromWWWAuthenticate(
+      wwwAuthenticate,
+      serverUrl,
+    );
+
+    if (!oauthConfig && hasNetworkTransport(mcpServerConfig)) {
       // Fallback: try to discover OAuth config from the base URL
-      const serverUrl = new URL(
-        mcpServerConfig.httpUrl || mcpServerConfig.url!,
-      );
-      const baseUrl = `${serverUrl.protocol}//${serverUrl.host}`;
+      const baseUrl = OAuthUtils.extractBaseUrl(serverUrl!);
       oauthConfig = await OAuthUtils.discoverOAuthConfig(baseUrl);
     }
 
@@ -689,13 +745,12 @@ async function handleAutomaticOAuth(
     const oauthAuthConfig = {
       enabled: true,
       authorizationUrl: oauthConfig.authorizationUrl,
+      issuer: oauthConfig.issuer,
       tokenUrl: oauthConfig.tokenUrl,
       scopes: oauthConfig.scopes || [],
     };
 
     // Perform OAuth authentication
-    // Pass the server URL for proper discovery
-    const serverUrl = mcpServerConfig.httpUrl || mcpServerConfig.url;
     debugLogger.log(
       `Starting OAuth authentication for server '${mcpServerName}'...`,
     );
@@ -859,6 +914,7 @@ class LenientJsonSchemaValidator implements jsonSchemaValidator {
       );
       return (input: unknown) => ({
         valid: true as const,
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
         data: input as T,
         errorMessage: undefined,
       });
@@ -873,6 +929,7 @@ export function populateMcpServerCommand(
 ): Record<string, MCPServerConfig> {
   if (mcpServerCommand) {
     const cmd = mcpServerCommand;
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
     const args = parse(cmd, process.env) as string[];
     if (args.some((arg) => typeof arg !== 'string')) {
       throw new Error('failed to parse mcpServerCommand: ' + cmd);
@@ -986,7 +1043,11 @@ export async function discoverTools(
   mcpClient: Client,
   cliConfig: Config,
   messageBus: MessageBus,
-  options?: { timeout?: number; signal?: AbortSignal },
+  options?: {
+    timeout?: number;
+    signal?: AbortSignal;
+    progressReporter?: McpProgressReporter;
+  },
 ): Promise<DiscoveredMCPTool[]> {
   try {
     // Only request tools if the server supports them.
@@ -1004,7 +1065,11 @@ export async function discoverTools(
           mcpClient,
           toolDef,
           mcpServerConfig.timeout ?? MCP_DEFAULT_TIMEOUT_MSEC,
+          options?.progressReporter,
         );
+
+        // Extract readOnlyHint from annotations
+        const isReadOnly = toolDef.annotations?.readOnlyHint === true;
 
         const tool = new DiscoveredMCPTool(
           mcpCallableTool,
@@ -1014,11 +1079,23 @@ export async function discoverTools(
           toolDef.inputSchema ?? { type: 'object', properties: {} },
           messageBus,
           mcpServerConfig.trust,
+          isReadOnly,
           undefined,
           cliConfig,
           mcpServerConfig.extension?.name,
           mcpServerConfig.extension?.id,
         );
+
+        // If the tool is read-only, allow it in Plan mode
+        if (isReadOnly) {
+          cliConfig.getPolicyEngine().addRule({
+            toolName: tool.getFullyQualifiedName(),
+            decision: PolicyDecision.ASK_USER,
+            priority: 50, // Match priority of built-in plan tools
+            modes: [ApprovalMode.PLAN],
+            source: `MCP Annotation (readOnlyHint) - ${mcpServerName}`,
+          });
+        }
 
         discoveredTools.push(tool);
       } catch (error) {
@@ -1026,6 +1103,7 @@ export async function discoverTools(
           'error',
           `Error discovering tool: '${
             toolDef.name
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
           }' from MCP server '${mcpServerName}': ${(error as Error).message}`,
           error,
         );
@@ -1054,6 +1132,7 @@ class McpCallableTool implements CallableTool {
     private readonly client: Client,
     private readonly toolDef: McpTool,
     private readonly timeout: number,
+    private readonly progressReporter?: McpProgressReporter,
   ) {}
 
   async tool(): Promise<Tool> {
@@ -1075,11 +1154,22 @@ class McpCallableTool implements CallableTool {
     }
     const call = functionCalls[0];
 
+    const progressToken = randomUUID();
+    const context = getToolCallContext();
+    if (context && this.progressReporter) {
+      this.progressReporter.registerProgressToken(
+        progressToken,
+        context.callId,
+      );
+    }
+
     try {
       const result = await this.client.callTool(
         {
           name: call.name!,
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
           arguments: call.args as Record<string, unknown>,
+          _meta: { progressToken },
         },
         undefined,
         { timeout: this.timeout },
@@ -1108,6 +1198,10 @@ class McpCallableTool implements CallableTool {
           },
         },
       ];
+    } finally {
+      if (this.progressReporter) {
+        this.progressReporter.unregisterProgressToken(progressToken);
+      }
     }
   }
 }
@@ -1495,6 +1589,7 @@ export async function connectToMcpServer(
       return mcpClient;
     } catch (error) {
       await transport.close();
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
       firstAttemptError = error as Error;
       throw error;
     }
@@ -1534,6 +1629,7 @@ export async function connectToMcpServer(
         );
         return mcpClient;
       } catch (sseFallbackError) {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
         sseError = sseFallbackError as Error;
 
         // If SSE also returned 401, handle OAuth below
@@ -1683,6 +1779,7 @@ export async function connectToMcpServer(
             const oauthAuthConfig = {
               enabled: true,
               authorizationUrl: oauthConfig.authorizationUrl,
+              issuer: oauthConfig.issuer,
               tokenUrl: oauthConfig.tokenUrl,
               scopes: oauthConfig.scopes || [],
             };
@@ -1871,37 +1968,50 @@ export async function createTransport(
   }
 
   if (mcpServerConfig.command) {
-    const transport = new StdioClientTransport({
+    let transport: Transport = new StdioClientTransport({
       command: mcpServerConfig.command,
       args: mcpServerConfig.args || [],
-      env: sanitizeEnvironment(
-        {
-          ...process.env,
-          ...getExtensionEnvironment(mcpServerConfig.extension),
-          ...(mcpServerConfig.env || {}),
-        },
-        {
-          ...sanitizationConfig,
-          allowedEnvironmentVariables: [
-            ...(sanitizationConfig.allowedEnvironmentVariables ?? []),
-            ...(mcpServerConfig.extension?.resolvedSettings?.map(
-              (s) => s.envVar,
-            ) ?? []),
-          ],
-          enableEnvironmentVariableRedaction: true,
-        },
-      ) as Record<string, string>,
+      env: {
+        ...sanitizeEnvironment(process.env, sanitizationConfig),
+        ...(mcpServerConfig.env || {}),
+        [GEMINI_CLI_IDENTIFICATION_ENV_VAR]:
+          GEMINI_CLI_IDENTIFICATION_ENV_VAR_VALUE,
+      } as Record<string, string>,
       cwd: mcpServerConfig.cwd,
       stderr: 'pipe',
     });
+
+    // Fix for Xcode 26.3 mcpbridge non-compliant responses
+    // It returns JSON in `content` instead of `structuredContent`
+    if (
+      mcpServerConfig.command === 'xcrun' &&
+      mcpServerConfig.args?.includes('mcpbridge')
+    ) {
+      transport = new XcodeMcpBridgeFixTransport(transport);
+    }
+
     if (debugMode) {
-      transport.stderr!.on('data', (data) => {
-        const stderrStr = data.toString().trim();
-        debugLogger.debug(
-          `[DEBUG] [MCP STDERR (${mcpServerName})]: `,
-          stderrStr,
-        );
-      });
+      // The `XcodeMcpBridgeFixTransport` wrapper hides the underlying `StdioClientTransport`,
+      // which exposes `stderr` for debug logging. We need to unwrap it to attach the listener.
+
+      const underlyingTransport =
+        transport instanceof XcodeMcpBridgeFixTransport
+          ? // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-type-assertion
+            (transport as any).transport
+          : transport;
+
+      if (
+        underlyingTransport instanceof StdioClientTransport &&
+        underlyingTransport.stderr
+      ) {
+        underlyingTransport.stderr.on('data', (data) => {
+          const stderrStr = data.toString().trim();
+          debugLogger.debug(
+            `[DEBUG] [MCP STDERR (${mcpServerName})]: `,
+            stderrStr,
+          );
+        });
+      }
     }
     return transport;
   }
@@ -1940,18 +2050,4 @@ export function isEnabled(
       (tool) => tool === funcDecl.name || tool.startsWith(`${funcDecl.name}(`),
     )
   );
-}
-
-function getExtensionEnvironment(
-  extension?: GeminiCLIExtension,
-): Record<string, string> {
-  const env: Record<string, string> = {};
-  if (extension?.resolvedSettings) {
-    for (const setting of extension.resolvedSettings) {
-      if (setting.value) {
-        env[setting.envVar] = setting.value;
-      }
-    }
-  }
-  return env;
 }

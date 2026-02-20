@@ -5,6 +5,7 @@ exports[`<ModelStatsDisplay /> > should display a single model correctly 1`] = `
 │                                                                                                  │
 │  Model Stats For Nerds                                                                           │
 │                                                                                                  │
+│                                                                                                  │
 │  Metric                      gemini-2.5-pro                                                      │
 │  ──────────────────────────────────────────────────────────────────────────────────────────────  │
 │  API                                                                                             │
@@ -20,14 +21,15 @@ exports[`<ModelStatsDisplay /> > should display a single model correctly 1`] = `
 │    ↳ Output                  20                                                                  │
 │  Estimated Cost                                                                                  │
 │  Total                       0                                                                   │
-│                                                                                                  │
-╰──────────────────────────────────────────────────────────────────────────────────────────────────╯"
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+"
 `;
 
 exports[`<ModelStatsDisplay /> > should display conditional rows if at least one model has data 1`] = `
 "╭──────────────────────────────────────────────────────────────────────────────────────────────────╮
 │                                                                                                  │
 │  Model Stats For Nerds                                                                           │
+│                                                                                                  │
 │                                                                                                  │
 │  Metric                      gemini-2.5-pro                   gemini-2.5-flash                   │
 │  ──────────────────────────────────────────────────────────────────────────────────────────────  │
@@ -44,14 +46,44 @@ exports[`<ModelStatsDisplay /> > should display conditional rows if at least one
 │    ↳ Output                  20                               10                                 │
 │  Estimated Cost                                                                                  │
 │  Total                       0                                0                                  │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+"
+`;
+
+exports[`<ModelStatsDisplay /> > should display role breakdown correctly 1`] = `
+"╭──────────────────────────────────────────────────────────────────────────────────────────────────╮
 │                                                                                                  │
-╰──────────────────────────────────────────────────────────────────────────────────────────────────╯"
+│  Model Stats For Nerds                                                                           │
+│                                                                                                  │
+│                                                                                                  │
+│  Metric                      gemini-2.5-pro                                                      │
+│  ──────────────────────────────────────────────────────────────────────────────────────────────  │
+│  API                                                                                             │
+│  Requests                    2                                                                   │
+│  Errors                      0 (0.0%)                                                            │
+│  Avg Latency                 100ms                                                               │
+│  Tokens                                                                                          │
+│  Total                       70                                                                  │
+│    ↳ Input                   20                                                                  │
+│    ↳ Cache Reads             10 (33.3%)                                                          │
+│    ↳ Output                  40                                                                  │
+│  Roles                                                                                           │
+│  main                                                                                            │
+│    ↳ Requests                1                                                                   │
+│    ↳ Input                   10                                                                  │
+│    ↳ Output                  20                                                                  │
+│    ↳ Cache Reads             5                                                                   │
+│  Estimated Cost                                                                                  │
+│  Total                       0                                                                   │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+"
 `;
 
 exports[`<ModelStatsDisplay /> > should display stats for multiple models correctly 1`] = `
 "╭──────────────────────────────────────────────────────────────────────────────────────────────────╮
 │                                                                                                  │
 │  Model Stats For Nerds                                                                           │
+│                                                                                                  │
 │                                                                                                  │
 │  Metric                      gemini-2.5-pro                   gemini-2.5-flash                   │
 │  ──────────────────────────────────────────────────────────────────────────────────────────────  │
@@ -68,14 +100,37 @@ exports[`<ModelStatsDisplay /> > should display stats for multiple models correc
 │    ↳ Output                  200                              400                                │
 │  Estimated Cost                                                                                  │
 │  Total                       0.002                            0.001                              │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+"
+`;
+
+exports[`<ModelStatsDisplay /> > should filter out invalid role names 1`] = `
+"╭──────────────────────────────────────────────────────────────────────────────────────────────────╮
 │                                                                                                  │
-╰──────────────────────────────────────────────────────────────────────────────────────────────────╯"
+│  Model Stats For Nerds                                                                           │
+│                                                                                                  │
+│                                                                                                  │
+│  Metric                      gemini-2.5-pro                                                      │
+│  ──────────────────────────────────────────────────────────────────────────────────────────────  │
+│  API                                                                                             │
+│  Requests                    1                                                                   │
+│  Errors                      0 (0.0%)                                                            │
+│  Avg Latency                 100ms                                                               │
+│  Tokens                                                                                          │
+│  Total                       30                                                                  │
+│    ↳ Input                   10                                                                  │
+│    ↳ Output                  20                                                                  │
+│  Estimated Cost                                                                                  │
+│  Total                       0                                                                   │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+"
 `;
 
 exports[`<ModelStatsDisplay /> > should handle large values without wrapping or overlapping 1`] = `
 "╭──────────────────────────────────────────────────────────────────────────────────────────────────╮
 │                                                                                                  │
 │  Model Stats For Nerds                                                                           │
+│                                                                                                  │
 │                                                                                                  │
 │  Metric                      gemini-2.5-pro                                                      │
 │  ──────────────────────────────────────────────────────────────────────────────────────────────  │
@@ -92,38 +147,43 @@ exports[`<ModelStatsDisplay /> > should handle large values without wrapping or 
 │    ↳ Output                  123,456,789                                                         │
 │  Estimated Cost                                                                                  │
 │  Total                       2,175.926                                                           │
-│                                                                                                  │
-╰──────────────────────────────────────────────────────────────────────────────────────────────────╯"
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+"
 `;
 
-exports[`<ModelStatsDisplay /> > should handle models with long names (gemini-3-*-preview) without layout breaking 1`] = `
-"╭──────────────────────────────────────────────────────────────────────────────╮
-│                                                                              │
-│  Model Stats For Nerds                                                       │
-│                                                                              │
-│  Metric                      gemini-3-pro-preview   gemini-3-flash-preview   │
-│  ──────────────────────────────────────────────────────────────────────────  │
-│  API                                                                         │
-│  Requests                    10                     20                       │
-│  Errors                      0 (0.0%)               0 (0.0%)                 │
-│  Avg Latency                 200ms                  50ms                     │
-│  Tokens                                                                      │
-│  Total                       6,000                  12,000                   │
-│    ↳ Input                   1,000                  2,000                    │
-│    ↳ Cache Reads             500 (25.0%)            1,000 (25.0%)            │
-│    ↳ Thoughts                100                    200                      │
-│    ↳ Tool                    50                     100                      │
-│    ↳ Output                  4,000                  8,000                    │
-│  Estimated Cost                                                              │
-│  Total                       0.049                  0.025                    │
-│                                                                              │
-╰──────────────────────────────────────────────────────────────────────────────╯"
+exports[`<ModelStatsDisplay /> > should handle long role name layout 1`] = `
+"╭──────────────────────────────────────────────────────────────────────────────────────────────────╮
+│                                                                                                  │
+│  Model Stats For Nerds                                                                           │
+│                                                                                                  │
+│                                                                                                  │
+│  Metric                      gemini-2.5-pro                                                      │
+│  ──────────────────────────────────────────────────────────────────────────────────────────────  │
+│  API                                                                                             │
+│  Requests                    1                                                                   │
+│  Errors                      0 (0.0%)                                                            │
+│  Avg Latency                 100ms                                                               │
+│  Tokens                                                                                          │
+│  Total                       30                                                                  │
+│    ↳ Input                   10                                                                  │
+│    ↳ Output                  20                                                                  │
+│  Roles                                                                                           │
+│  utility_loop_detector                                                                           │
+│    ↳ Requests                1                                                                   │
+│    ↳ Input                   10                                                                  │
+│    ↳ Output                  20                                                                  │
+│    ↳ Cache Reads             0                                                                   │
+│  Estimated Cost                                                                                  │
+│  Total                       0                                                                   │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+"
 `;
 
 exports[`<ModelStatsDisplay /> > should not display conditional rows if no model has data for them 1`] = `
 "╭──────────────────────────────────────────────────────────────────────────────────────────────────╮
 │                                                                                                  │
 │  Model Stats For Nerds                                                                           │
+│                                                                                                  │
 │                                                                                                  │
 │  Metric                      gemini-2.5-pro                                                      │
 │  ──────────────────────────────────────────────────────────────────────────────────────────────  │
@@ -137,14 +197,14 @@ exports[`<ModelStatsDisplay /> > should not display conditional rows if no model
 │    ↳ Output                  20                                                                  │
 │  Estimated Cost                                                                                  │
 │  Total                       0                                                                   │
-│                                                                                                  │
-╰──────────────────────────────────────────────────────────────────────────────────────────────────╯"
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+"
 `;
 
 exports[`<ModelStatsDisplay /> > should render "no API calls" message when there are no active models 1`] = `
 "╭──────────────────────────────────────────────────────────────────────────────────────────────────╮
 │                                                                                                  │
 │  No API calls have been made in this session.                                                    │
-│                                                                                                  │
-╰──────────────────────────────────────────────────────────────────────────────────────────────────╯"
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+"
 `;
