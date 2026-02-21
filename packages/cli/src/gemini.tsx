@@ -712,6 +712,14 @@ export async function main() {
     cliStartupHandle?.end();
     // Render UI, passing necessary config values. Check that there is no command line question.
     if (config.isInteractive()) {
+      const a2aPort = config.getA2APort();
+      if (a2aPort) {
+        const { A2AService } = await import('./services/a2aService.js');
+        const a2aService = new A2AService(config);
+        a2aService.start();
+        registerCleanup(() => a2aService.stop());
+      }
+
       await startInteractiveUI(
         config,
         settings,

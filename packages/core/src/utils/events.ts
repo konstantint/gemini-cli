@@ -9,6 +9,7 @@ import type { AgentDefinition } from '../agents/types.js';
 import type { McpClient } from '../tools/mcp-client.js';
 import type { ExtensionEvents } from './extensionLoader.js';
 import type { EditorType } from './editor.js';
+import type { ServerGeminiStreamEvent } from '../core/turn.js';
 import type {
   TokenStorageInitializationEvent,
   KeychainAvailabilityEvent,
@@ -185,6 +186,7 @@ export enum CoreEvent {
   EditorSelected = 'editor-selected',
   SlashCommandConflicts = 'slash-command-conflicts',
   QuotaChanged = 'quota-changed',
+  ModelActivity = 'model-activity',
   TelemetryKeychainAvailability = 'telemetry-keychain-availability',
   TelemetryTokenStorageType = 'telemetry-token-storage-type',
 }
@@ -218,6 +220,7 @@ export interface CoreEvents extends ExtensionEvents {
   [CoreEvent.RequestEditorSelection]: never[];
   [CoreEvent.EditorSelected]: [EditorSelectedPayload];
   [CoreEvent.SlashCommandConflicts]: [SlashCommandConflictsPayload];
+  [CoreEvent.ModelActivity]: [ServerGeminiStreamEvent];
   [CoreEvent.TelemetryKeychainAvailability]: [KeychainAvailabilityEvent];
   [CoreEvent.TelemetryTokenStorageType]: [TokenStorageInitializationEvent];
 }
@@ -367,6 +370,13 @@ export class CoreEventEmitter extends EventEmitter<CoreEvents> {
   emitSlashCommandConflicts(conflicts: SlashCommandConflict[]): void {
     const payload: SlashCommandConflictsPayload = { conflicts };
     this._emitOrQueue(CoreEvent.SlashCommandConflicts, payload);
+  }
+
+  /**
+   * Broadcasts model activity events (thought, content, tool call, etc.)
+   */
+  emitModelActivity(event: ServerGeminiStreamEvent): void {
+    this.emit(CoreEvent.ModelActivity, event);
   }
 
   /**

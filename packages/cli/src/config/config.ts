@@ -97,6 +97,7 @@ export interface CliArgs {
   rawOutput: boolean | undefined;
   acceptRawOutputRisk: boolean | undefined;
   isCommand: boolean | undefined;
+  a2aPort: number | undefined;
 }
 
 export async function parseArguments(
@@ -288,6 +289,12 @@ export async function parseArguments(
         .option('accept-raw-output-risk', {
           type: 'boolean',
           description: 'Suppress the security warning when using --raw-output.',
+        })
+        .option('a2a-port', {
+          type: 'number',
+          nargs: 1,
+          description:
+            'Exposes an A2A HTTP/WebSocket endpoint on the specified port.',
         }),
     )
     // Register MCP subcommands
@@ -756,6 +763,7 @@ export async function loadCliConfig(
   return new Config({
     sessionId,
     clientVersion: await getVersion(),
+    a2aPort: argv.a2aPort,
     embeddingModel: DEFAULT_GEMINI_EMBEDDING_MODEL,
     sandbox: sandboxConfig,
     targetDir: cwd,

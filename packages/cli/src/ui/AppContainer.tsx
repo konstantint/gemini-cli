@@ -1585,6 +1585,16 @@ Logging in with Google... Restarting Gemini CLI to continue.
     };
   }, [config]);
 
+  useEffect(() => {
+    const handleInjectInput = (input: string) => {
+      void handleFinalSubmit(input);
+    };
+    appEvents.on(AppEvent.InjectInput, handleInjectInput);
+    return () => {
+      appEvents.off(AppEvent.InjectInput, handleInjectInput);
+    };
+  }, [handleFinalSubmit]);
+
   const handleEscapePromptChange = useCallback((showPrompt: boolean) => {
     setShowEscapePrompt(showPrompt);
   }, []);

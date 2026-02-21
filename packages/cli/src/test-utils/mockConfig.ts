@@ -149,6 +149,7 @@ export const createMockConfig = (overrides: Partial<Config> = {}): Config =>
     getEmbeddingModel: vi.fn().mockReturnValue('embedding-model'),
     getQuotaErrorOccurred: vi.fn().mockReturnValue(false),
     getMaxSessionTurns: vi.fn().mockReturnValue(100),
+    getA2APort: vi.fn(() => undefined),
     getExcludeTools: vi.fn().mockReturnValue(new Set()),
     getAllowedMcpServers: vi.fn().mockReturnValue([]),
     getBlockedMcpServers: vi.fn().mockReturnValue([]),

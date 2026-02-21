@@ -17,6 +17,7 @@ import type {
   ToolResult,
 } from '../tools/tools.js';
 import { getResponseText } from '../utils/partUtils.js';
+import { coreEvents } from '../utils/events.js';
 import { reportError } from '../utils/errorReporting.js';
 import {
   getErrorMessage,
@@ -271,29 +272,41 @@ export class Turn {
 
       for await (const streamEvent of responseStream) {
         if (signal?.aborted) {
-          yield { type: GeminiEventType.UserCancelled };
+          const event: ServerGeminiStreamEvent = {
+            type: GeminiEventType.UserCancelled,
+          };
+          coreEvents.emitModelActivity(event);
+          yield event;
           return;
         }
 
         // Handle the new RETRY event
         if (streamEvent.type === 'retry') {
-          yield { type: GeminiEventType.Retry };
+          const event: ServerGeminiStreamEvent = {
+            type: GeminiEventType.Retry,
+          };
+          coreEvents.emitModelActivity(event);
+          yield event;
           continue; // Skip to the next event in the stream
         }
 
         if (streamEvent.type === 'agent_execution_stopped') {
-          yield {
+          const event: ServerGeminiStreamEvent = {
             type: GeminiEventType.AgentExecutionStopped,
             value: { reason: streamEvent.reason },
           };
+          coreEvents.emitModelActivity(event);
+          yield event;
           return;
         }
 
         if (streamEvent.type === 'agent_execution_blocked') {
-          yield {
+          const event: ServerGeminiStreamEvent = {
             type: GeminiEventType.AgentExecutionBlocked,
             value: { reason: streamEvent.reason },
           };
+          coreEvents.emitModelActivity(event);
+          yield event;
           continue;
         }
 
@@ -309,17 +322,25 @@ export class Turn {
         for (const part of parts) {
           if (part.thought) {
             const thought = parseThought(part.text ?? '');
-            yield {
+            const event: ServerGeminiStreamEvent = {
               type: GeminiEventType.Thought,
               value: thought,
               traceId,
             };
+            coreEvents.emitModelActivity(event);
+            yield event;
           }
         }
 
         const text = getResponseText(resp);
         if (text) {
-          yield { type: GeminiEventType.Content, value: text, traceId };
+          const event: ServerGeminiStreamEvent = {
+            type: GeminiEventType.Content,
+            value: text,
+            traceId,
+          };
+          coreEvents.emitModelActivity(event);
+          yield event;
         }
 
         // Handle function calls (requesting tool execution)
@@ -327,6 +348,7 @@ export class Turn {
         for (const fnCall of functionCalls) {
           const event = this.handlePendingFunctionCall(fnCall, traceId);
           if (event) {
+            coreEvents.emitModelActivity(event);
             yield event;
           }
         }
@@ -341,32 +363,44 @@ export class Turn {
         // This is the key change: Only yield 'Finished' if there is a finishReason.
         if (finishReason) {
           if (this.pendingCitations.size > 0) {
-            yield {
+            const event: ServerGeminiStreamEvent = {
               type: GeminiEventType.Citation,
               value: `Citations:\n${[...this.pendingCitations].sort().join('\n')}`,
             };
+            coreEvents.emitModelActivity(event);
+            yield event;
             this.pendingCitations.clear();
           }
 
           this.finishReason = finishReason;
-          yield {
+          const event: ServerGeminiFinishedEvent = {
             type: GeminiEventType.Finished,
             value: {
               reason: finishReason,
               usageMetadata: resp.usageMetadata,
             },
           };
+          coreEvents.emitModelActivity(event);
+          yield event;
         }
       }
     } catch (e) {
       if (signal.aborted) {
-        yield { type: GeminiEventType.UserCancelled };
+        const event: ServerGeminiStreamEvent = {
+          type: GeminiEventType.UserCancelled,
+        };
+        coreEvents.emitModelActivity(event);
+        yield event;
         // Regular cancellation error, fail gracefully.
         return;
       }
 
       if (e instanceof InvalidStreamError) {
-        yield { type: GeminiEventType.InvalidStream };
+        const event: ServerGeminiStreamEvent = {
+          type: GeminiEventType.InvalidStream,
+        };
+        coreEvents.emitModelActivity(event);
+        yield event;
         return;
       }
 
@@ -398,7 +432,12 @@ export class Turn {
         status,
       };
       await this.chat.maybeIncludeSchemaDepthContext(structuredError);
-      yield { type: GeminiEventType.Error, value: { error: structuredError } };
+      const event: ServerGeminiStreamEvent = {
+        type: GeminiEventType.Error,
+        value: { error: structuredError },
+      };
+      coreEvents.emitModelActivity(event);
+      yield event;
       return;
     }
   }

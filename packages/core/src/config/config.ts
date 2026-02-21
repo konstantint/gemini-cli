@@ -68,7 +68,10 @@ import { ideContextStore } from '../ide/ideContext.js';
 import { WriteTodosTool } from '../tools/write-todos.js';
 import type { FileSystemService } from '../services/fileSystemService.js';
 import { StandardFileSystemService } from '../services/fileSystemService.js';
-import { logRipgrepFallback, logFlashFallback } from '../telemetry/loggers.js';
+import { logRipgrepFallback, logFlashFallback ,
+  logApprovalModeSwitch,
+  logApprovalModeDuration,
+} from '../telemetry/loggers.js';
 import {
   RipgrepFallbackEvent,
   FlashFallbackEvent,
@@ -103,9 +106,7 @@ import type { EventEmitter } from 'node:events';
 import { PolicyEngine } from '../policy/policy-engine.js';
 import { ApprovalMode, type PolicyEngineConfig } from '../policy/types.js';
 import { HookSystem } from '../hooks/index.js';
-import type { UserTierId } from '../code_assist/types.js';
-import type { RetrieveUserQuotaResponse } from '../code_assist/types.js';
-import type { AdminControlsSettings } from '../code_assist/types.js';
+import type { UserTierId , RetrieveUserQuotaResponse , AdminControlsSettings } from '../code_assist/types.js';
 import type { HierarchicalMemory } from './memory.js';
 import { getCodeAssistServer } from '../code_assist/codeAssist.js';
 import type { Experiments } from '../code_assist/experiments/experiments.js';
@@ -119,10 +120,6 @@ import { debugLogger } from '../utils/debugLogger.js';
 import { SkillManager, type SkillDefinition } from '../skills/skillManager.js';
 import { startupProfiler } from '../telemetry/startupProfiler.js';
 import type { AgentDefinition } from '../agents/types.js';
-import {
-  logApprovalModeSwitch,
-  logApprovalModeDuration,
-} from '../telemetry/loggers.js';
 import { fetchAdminControls } from '../code_assist/admin/admin_controls.js';
 import { isSubpath } from '../utils/paths.js';
 import { UserHintService } from './userHintService.js';
@@ -450,6 +447,7 @@ export interface ConfigParameters {
   summarizeToolOutput?: Record<string, SummarizeToolOutputSettings>;
   folderTrust?: boolean;
   ideMode?: boolean;
+  a2aPort?: number;
   loadMemoryFromIncludeDirectories?: boolean;
   includeDirectoryTree?: boolean;
   importFormat?: 'tree' | 'flat';
@@ -580,6 +578,7 @@ export class Config {
   private readonly noBrowser: boolean;
   private readonly folderTrust: boolean;
   private ideMode: boolean;
+  private readonly a2aPort: number | undefined;
 
   private _activeModel: string;
   private readonly maxSessionTurns: number;
@@ -911,6 +910,7 @@ export class Config {
         );
       }
     }
+    this.a2aPort = params.a2aPort;
     this.geminiClient = new GeminiClient(this);
     this.modelRouterService = new ModelRouterService(this);
 
@@ -944,6 +944,10 @@ export class Config {
 
   isInitialized(): boolean {
     return this.initialized;
+  }
+
+  getA2APort(): number | undefined {
+    return this.a2aPort;
   }
 
   /**
