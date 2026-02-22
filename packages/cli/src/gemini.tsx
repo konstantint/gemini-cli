@@ -370,6 +370,15 @@ export async function main() {
   const argv = await parseArguments(settings.merged);
   parseArgsHandle?.end();
 
+  if (argv.uiPort) {
+    const { UiMirrorService } = await import('./services/uiMirrorService.js');
+    await UiMirrorService.getInstance().start(argv.uiPort);
+    registerCleanup(() => {
+      UiMirrorService.getInstance().stop();
+      return Promise.resolve();
+    });
+  }
+
   if (
     (argv.allowedTools && argv.allowedTools.length > 0) ||
     (settings.merged.tools?.allowed && settings.merged.tools.allowed.length > 0)

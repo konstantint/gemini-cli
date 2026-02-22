@@ -12,6 +12,7 @@ import {
   useRef,
   useLayoutEffect,
 } from 'react';
+import { randomUUID } from 'node:crypto';
 import {
   type DOMElement,
   measureElement,
@@ -166,6 +167,7 @@ import { shouldDismissShortcutsHelpOnHotkey } from './utils/shortcutsHelp.js';
 import { useSuspend } from './hooks/useSuspend.js';
 import { useRunEventNotifications } from './hooks/useRunEventNotifications.js';
 import { isNotificationsEnabled } from '../utils/terminalNotifications.js';
+import { UiMirrorService } from '../services/uiMirrorService.js';
 
 function isToolExecuting(pendingHistoryItems: HistoryItemWithoutId[]) {
   return pendingHistoryItems.some((item) => {
@@ -962,9 +964,20 @@ Logging in with Google... Restarting Gemini CLI to continue.
 
   useEffect(() => {
     const handleConsentRequest = (payload: ConsentRequestPayload) => {
+      const id = randomUUID();
+      UiMirrorService.getInstance().broadcast('permission_dialog', {
+        id,
+        type: 'consent',
+        prompt: payload.prompt,
+        options: ['Confirm', 'Deny'],
+      });
       setAuthConsentRequest({
         prompt: payload.prompt,
         onConfirm: (confirmed: boolean) => {
+          UiMirrorService.getInstance().broadcast('permission_selection', {
+            id,
+            selection: confirmed ? 'Confirm' : 'Deny',
+          });
           setAuthConsentRequest(null);
           payload.onConfirm(confirmed);
         },
@@ -1275,9 +1288,23 @@ Logging in with Google... Restarting Gemini CLI to continue.
         if (!isSlash) {
           const permissions = await checkPermissions(submittedValue, config);
           if (permissions.length > 0) {
+            const id = randomUUID();
+            UiMirrorService.getInstance().broadcast('permission_dialog', {
+              id,
+              type: 'file_access',
+              files: permissions,
+              options: ['Allow', 'Deny'],
+            });
             setPermissionConfirmationRequest({
               files: permissions,
               onComplete: (result) => {
+                UiMirrorService.getInstance().broadcast(
+                  'permission_selection',
+                  {
+                    id,
+                    selection: result.allowed ? 'Allow' : 'Deny',
+                  },
+                );
                 setPermissionConfirmationRequest(null);
                 if (result.allowed) {
                   permissions.forEach((p) =>

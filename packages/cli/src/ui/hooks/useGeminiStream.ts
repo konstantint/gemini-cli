@@ -88,6 +88,7 @@ import path from 'node:path';
 import { useSessionStats } from '../contexts/SessionContext.js';
 import { useKeypress } from './useKeypress.js';
 import type { LoadedSettings } from '../../config/settings.js';
+import { UiMirrorService } from '../../services/uiMirrorService.js';
 
 type ToolResponseWithParts = ToolCallResponseInfo & {
   llmContent?: PartListUnion;
@@ -341,6 +342,12 @@ export const useGeminiStream = (
     () => calculateStreamingState(isResponding, toolCalls),
     [isResponding, toolCalls],
   );
+
+  useEffect(() => {
+    if (streamingState === StreamingState.Idle) {
+      UiMirrorService.getInstance().broadcast('idle', {});
+    }
+  }, [streamingState]);
 
   // Reset tracking when a new batch of tools starts
   useEffect(() => {
@@ -790,6 +797,9 @@ export const useGeminiStream = (
         // Prevents additional output after a user initiated cancel.
         return '';
       }
+      UiMirrorService.getInstance().broadcast('model_output', {
+        text: eventValue,
+      });
       let newGeminiMessageBuffer = currentGeminiMessageBuffer + eventValue;
       if (
         pendingHistoryItemRef.current?.type !== 'gemini' &&
@@ -1157,6 +1167,7 @@ export const useGeminiStream = (
             break;
           case ServerGeminiEventType.ToolCallRequest:
             toolCallRequests.push(event.value);
+            UiMirrorService.getInstance().broadcast('tool_call', event.value);
             break;
           case ServerGeminiEventType.UserCancelled:
             handleUserCancelledEvent(userMessageTimestamp);
@@ -1311,6 +1322,9 @@ export const useGeminiStream = (
                     promptText,
                   ),
                 );
+                UiMirrorService.getInstance().broadcast('user_message', {
+                  text: promptText,
+                });
               }
               startNewPrompt();
               setThought(null); // Reset thought when starting a new prompt
@@ -1549,6 +1563,18 @@ export const useGeminiStream = (
       const geminiTools = completedAndReadyToSubmitTools.filter(
         (t) => !t.request.isClientInitiated,
       );
+
+      geminiTools.forEach((tc) => {
+        const output = tc.response.responseParts
+          ?.map((p) => p.text || '')
+          .join('');
+        if (output) {
+          UiMirrorService.getInstance().broadcast('tool_output', {
+            callId: tc.request.callId,
+            output,
+          });
+        }
+      });
 
       if (geminiTools.length === 0) {
         return;

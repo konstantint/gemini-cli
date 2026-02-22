@@ -97,6 +97,7 @@ export interface CliArgs {
   rawOutput: boolean | undefined;
   acceptRawOutputRisk: boolean | undefined;
   isCommand: boolean | undefined;
+  uiPort: number | undefined;
 }
 
 export async function parseArguments(
@@ -110,6 +111,10 @@ export async function parseArguments(
     .usage(
       'Usage: gemini [options] [command]\n\nGemini CLI - Defaults to interactive mode. Use -p/--prompt for non-interactive (headless) mode.',
     )
+    .option('ui-port', {
+      type: 'number',
+      description: 'Port to start the UI Mirror WebSocket server on.',
+    })
     .option('debug', {
       alias: 'd',
       type: 'boolean',
