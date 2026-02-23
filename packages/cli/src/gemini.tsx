@@ -370,9 +370,17 @@ export async function main() {
   const argv = await parseArguments(settings.merged);
   parseArgsHandle?.end();
 
-  if (argv.uiPort) {
+  if (argv.uiPort !== undefined) {
     const { UiMirrorService } = await import('./services/uiMirrorService.js');
     await UiMirrorService.getInstance().start(argv.uiPort);
+    // Log the actual port if 0 was passed
+    const service = UiMirrorService.getInstance();
+    // @ts-expect-error - access private wss for port detection
+    const addr = service.wss?.address();
+    const actualPort =
+      typeof addr === 'object' && addr ? addr.port : argv.uiPort;
+    coreEvents.emitFeedback('info', `UI_MIRROR_PORT: ${actualPort}`);
+
     registerCleanup(() => {
       UiMirrorService.getInstance().stop();
       return Promise.resolve();

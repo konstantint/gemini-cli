@@ -112,6 +112,7 @@ export async function parseArguments(
       'Usage: gemini [options] [command]\n\nGemini CLI - Defaults to interactive mode. Use -p/--prompt for non-interactive (headless) mode.',
     )
     .option('ui-port', {
+      alias: 'uiPort',
       type: 'number',
       description: 'Port to start the UI Mirror WebSocket server on.',
     })
@@ -126,6 +127,11 @@ export async function parseArguments(
         .positional('query', {
           description:
             'Initial prompt. Runs in interactive mode by default; use -p/--prompt for non-interactive.',
+        })
+        .option('ui-port', {
+          alias: 'uiPort',
+          type: 'number',
+          description: 'Port to start the UI Mirror WebSocket server on.',
         })
         .option('model', {
           alias: 'm',
@@ -397,7 +403,13 @@ export async function parseArguments(
   // The import format is now only controlled by settings.memoryImportFormat
   // We no longer accept it as a CLI argument
   // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-  return result as unknown as CliArgs;
+  const finalResult = result as unknown as CliArgs;
+  const rawResult = result as Record<string, unknown>;
+  if (rawResult['ui-port'] && !finalResult.uiPort) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
+    finalResult.uiPort = rawResult['ui-port'] as number;
+  }
+  return finalResult;
 }
 
 /**

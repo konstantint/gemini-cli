@@ -1360,6 +1360,14 @@ export class TestRig {
     ]);
     const commandArgs = [...initialArgs];
 
+    if (options?.args) {
+      if (Array.isArray(options.args)) {
+        commandArgs.push(...options.args);
+      } else {
+        commandArgs.push(options.args);
+      }
+    }
+
     const envVars = this._getCleanEnv(options?.env);
 
     // node-pty on windows often needs these to spawn correctly

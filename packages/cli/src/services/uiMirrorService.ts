@@ -22,6 +22,7 @@ export class UiMirrorService {
   private static instance: UiMirrorService;
   private wss: WebSocketServer | null = null;
   private clients: Set<WebSocket> = new Set();
+  private startPromise: Promise<void> | null = null;
 
   private constructor() {}
 
@@ -42,43 +43,69 @@ export class UiMirrorService {
 
   async start(port: number): Promise<void> {
     if (this.wss) {
-      debugLogger.warn('UiMirrorService already running.');
+      const addr = this.wss.address();
+      const currentPort =
+        typeof addr === 'object' && addr ? addr.port : 'unknown';
+      debugLogger.log(
+        `UiMirrorService already running on port ${currentPort}.`,
+      );
       return;
     }
 
-    coreEvents.on(CoreEvent.HookStart, this.onHookStart);
-    coreEvents.on(CoreEvent.HookEnd, this.onHookEnd);
+    if (this.startPromise) {
+      return this.startPromise;
+    }
 
-    return new Promise((resolve, reject) => {
-      try {
-        this.wss = new WebSocketServer({ port });
+    this.startPromise = (async () => {
+      coreEvents.on(CoreEvent.HookStart, this.onHookStart);
+      coreEvents.on(CoreEvent.HookEnd, this.onHookEnd);
 
-        this.wss.on('connection', (ws: WebSocket) => {
-          this.clients.add(ws);
+      return new Promise<void>((resolve, reject) => {
+        try {
+          debugLogger.log(`Starting UiMirrorService on port ${port}...`);
+          // Using 127.0.0.1 explicitly to avoid issues in some test environments
+          this.wss = new WebSocketServer({ port, host: '127.0.0.1' });
 
-          ws.on('close', () => {
-            this.clients.delete(ws);
+          this.wss.on('connection', (ws: WebSocket) => {
+            this.clients.add(ws);
+
+            ws.on('close', () => {
+              this.clients.delete(ws);
+            });
+
+            ws.on('error', (err) => {
+              debugLogger.error('UiMirrorService client error:', err);
+              this.clients.delete(ws);
+            });
           });
 
-          ws.on('error', (err) => {
-            debugLogger.error('UiMirrorService client error:', err);
-            this.clients.delete(ws);
+          this.wss.on('error', (err) => {
+            debugLogger.error('UiMirrorService server error:', err);
+            this.startPromise = null;
+            reject(err);
           });
-        });
 
-        this.wss.on('error', (err) => {
-          debugLogger.error('UiMirrorService server error:', err);
+          this.wss.on('listening', () => {
+            const addr = this.wss?.address();
+            const actualPort =
+              typeof addr === 'object' && addr ? addr.port : port;
+            debugLogger.log(
+              `UiMirrorService listening on 127.0.0.1:${actualPort}`,
+            );
+            resolve();
+          });
+        } catch (err) {
+          debugLogger.error(
+            'UiMirrorService failed to start synchronously:',
+            err,
+          );
+          this.startPromise = null;
           reject(err);
-        });
+        }
+      });
+    })();
 
-        this.wss.on('listening', () => {
-          debugLogger.log(`UiMirrorService listening on port ${port}`);
-          resolve();
-        });
-      } catch (err) {
-        reject(err);
-      }
-    });
+    return this.startPromise;
   }
 
   stop(): void {
@@ -89,6 +116,7 @@ export class UiMirrorService {
       this.wss = null;
       this.clients.clear();
     }
+    this.startPromise = null;
   }
 
   broadcast(type: string, data: unknown): void {
